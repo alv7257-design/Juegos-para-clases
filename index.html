@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ensambla tu Robot - Partes de un Robot</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fuente Inter y Orbitron para estilo futurista -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            color: #f8fafc;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .font-tech {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Neon Glow Effects */
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5), inset 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5), inset 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+
+        .glow-green {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+        }
+
+        /* Cyber grid overlay */
+        .bg-cyber-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Drag and Drop Elements */
+        .draggable-piece {
+            cursor: grab;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .draggable-piece:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        .draggable-piece.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #22d3ee;
+            background-color: rgba(6, 182, 212, 0.2);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.6);
+            transform: scale(1.02);
+        }
+
+        .drop-zone.filled {
+            border-color: #22c55e;
+            background-color: rgba(34, 197, 94, 0.15);
+        }
+
+        /* Pulse Animations */
+        @keyframes pulse-cyan {
+            0%, 100% { border-color: rgba(6, 182, 212, 0.8); }
+            50% { border-color: rgba(6, 182, 212, 0.3); }
+        }
+
+        .animate-pulse-cyan {
+            animation: pulse-cyan 2s infinite;
+        }
+
+        /* Modal Smooth Fade */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 300ms, transform 300ms;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-cyber-grid flex flex-col justify-between overflow-x-hidden">
+
+    <!-- FX Canvas para Confeti y Efectos -->
+    <canvas id="fxCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+    <!-- HEADER / BARRA DE ESTADO -->
+    <header class="w-full bg-slate-900/80 backdrop-blur-md border-b border-cyan-500/30 sticky top-0 z-30 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo / Título -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center glow-cyan">
+                    <i class="fa-solid fa-robot text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-tech text-lg md:text-xl font-bold text-cyan-400 tracking-wider">ROBO-BUILDER 3000</h1>
+                    <p class="text-xs text-slate-400">Ensambla las partes del robot</p>
+                </div>
+            </div>
+
+            <!-- Stats (Puntaje, Tiempo, Aciertos) -->
+            <div class="flex items-center space-x-4 md:space-x-8 bg-slate-950/60 px-4 py-2 rounded-xl border border-slate-800">
+                <div class="text-center">
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">Aciertos</span>
+                    <span id="scoreText" class="font-tech text-lg font-bold text-emerald-400">0 / 7</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">Tiempo</span>
+                    <span id="timerText" class="font-tech text-lg font-bold text-cyan-300">00:00</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div class="text-center">
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">Puntos</span>
+                    <span id="pointsText" class="font-tech text-lg font-bold text-amber-400">0</span>
+                </div>
+            </div>
+
+            <!-- Acciones / Botones -->
+            <div class="flex items-center space-x-2">
+                <button id="audioToggleBtn" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition" title="Activar/Desactivar Sonido">
+                    <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button id="hintBtn" class="p-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span class="text-xs font-bold hidden sm:inline">Pista</span>
+                </button>
+                <button id="restartBtn" class="p-2.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span class="text-xs font-bold hidden sm:inline">Reiniciar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL DEL JUEGO -->
+    <main class="max-w-7xl mx-auto w-full p-4 md:p-6 flex-1 flex flex-col lg:flex-row gap-6">
+
+        <!-- PANEL IZQUIERDO: DIAGRAMA / TABLERO DEL ROBOT -->
+        <section class="lg:w-7/12 bg-slate-900/60 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-slate-800 flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -top-10 -left-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-tech text-md font-semibold text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-cyan-400"></i> Diagrama de Ensamblaje
+                </h2>
+                <span class="text-xs bg-cyan-950/80 text-cyan-400 border border-cyan-800/60 px-2.5 py-1 rounded-full">Arrastra cada pieza a su ranura</span>
+            </div>
+
+            <!-- CONTENEDOR DEL ROBOT SVG E INTERACTIVO -->
+            <div class="relative w-full max-w-lg mx-auto aspect-[4/5] sm:aspect-[1/1] bg-slate-950/80 rounded-xl border border-cyan-900/40 p-4 flex items-center justify-center">
+                
+                <!-- SVG Ilusrtativo del Robot (Blueprint/Esqueleto) -->
+                <svg class="w-full h-full text-slate-800" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Conectores y Cables dibujados de fondo -->
+                    <path d="M 200 120 L 200 180" stroke="#1e293b" stroke-width="4" stroke-dasharray="4 4" />
+                    <path d="M 200 280 L 200 360" stroke="#1e293b" stroke-width="4" stroke-dasharray="4 4" />
+                    <path d="M 140 210 L 80 210" stroke="#1e293b" stroke-width="4" stroke-dasharray="4 4" />
+                    <path d="M 260 210 L 320 210 L 320 270" stroke="#1e293b" stroke-width="4" stroke-dasharray="4 4" />
+                    <path d="M 160 380 L 120 440" stroke="#1e293b" stroke-width="4" stroke-dasharray="4 4" />
+                    <path d="M 240 380 L 280 440" stroke="#1e293b" stroke-width="4" stroke-dasharray="4 4" />
+                    
+                    <!-- Silueta guía del Robot -->
+                    <circle cx="200" cy="80" r="45" stroke="#1e293b" stroke-width="2" fill="none"/>
+                    <rect x="130" y="160" width="140" height="130" rx="15" stroke="#1e293b" stroke-width="2" fill="none"/>
+                    <rect x="150" y="310" width="100" height="70" rx="10" stroke="#1e293b" stroke-width="2" fill="none"/>
+                </svg>
+
+                <!-- DROP ZONES UBICADAS SOBRE EL DIAGRAMA -->
+                <div id="dropZonesContainer" class="absolute inset-0 p-4">
+                    
+                    <!-- 1. Sensores (Cabeza) -->
+                    <div data-part="sensores" class="drop-zone absolute top-[6%] left-[30%] w-[40%] h-[16%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-eye text-cyan-500/50"></i> Sensores
+                        </span>
+                    </div>
+
+                    <!-- 2. Controlador (Pecho Alto) -->
+                    <div data-part="controlador" class="drop-zone absolute top-[28%] left-[33%] w-[34%] h-[16%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-microchip text-purple-500/50"></i> Controlador
+                        </span>
+                    </div>
+
+                    <!-- 3. Fuente de Alimentación (Abdomen) -->
+                    <div data-part="bateria" class="drop-zone absolute top-[48%] left-[35%] w-[30%] h-[15%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-car-battery text-amber-500/50"></i> Batería
+                        </span>
+                    </div>
+
+                    <!-- 4. Chasis / Estructura (Cuerpo Base Espalda) -->
+                    <div data-part="chasis" class="drop-zone absolute top-[30%] left-[5%] w-[24%] h-[20%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-shield-halved text-blue-500/50"></i> Chasis
+                        </span>
+                    </div>
+
+                    <!-- 5. Gripper / Efector Final (Mano Derecha) -->
+                    <div data-part="efector" class="drop-zone absolute top-[50%] right-[5%] w-[25%] h-[18%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-hand-back-fist text-emerald-500/50"></i> Gripper
+                        </span>
+                    </div>
+
+                    <!-- 6. Actuadores / Motores (Base/Extremidades) -->
+                    <div data-part="actuadores" class="drop-zone absolute top-[72%] left-[28%] w-[44%] h-[14%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-gear text-rose-500/50"></i> Actuadores
+                        </span>
+                    </div>
+
+                    <!-- 7. Cables y Buses de Datos (Conexiones) -->
+                    <div data-part="cables" class="drop-zone absolute top-[70%] left-[3%] w-[22%] h-[18%] border-2 border-dashed border-slate-700 bg-slate-900/80 rounded-xl flex items-center justify-center p-2 text-center transition">
+                        <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                            <i class="fa-solid fa-network-wired text-indigo-500/50"></i> Cables
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Leyenda Inferior -->
+            <div class="mt-4 text-center text-xs text-slate-500">
+                <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i> Haz clic en una pieza colocada para volver a moverla o inspeccionar su función.
+            </div>
+        </section>
+
+        <!-- PANEL DERECHO: BANCO DE PIEZAS Y DESCRIPCIONES -->
+        <section class="lg:w-5/12 flex flex-col gap-4">
+            
+            <!-- BANCO DE PIEZAS -->
+            <div class="bg-slate-900/60 backdrop-blur-md rounded-2xl p-4 md:p-5 border border-slate-800 flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-tech text-md font-semibold text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-purple-400"></i> Banco de Componentes
+                    </h2>
+                    <span id="piecesCount" class="text-xs font-bold text-cyan-400 bg-slate-800 px-2 py-1 rounded-md">7 disponibles</span>
+                </div>
+
+                <!-- Lista de Piezas Arrastrables -->
+                <div id="piecesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1 overflow-y-auto max-h-[420px] p-1">
+                    <!-- Inyectadas dinámicamente mediante JavaScript -->
+                </div>
+            </div>
+
+            <!-- TARJETA EDUCATIVA / DETALLES DE LA PARTE -->
+            <div id="infoCard" class="bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 border border-cyan-500/30 flex items-start space-x-4 min-h-[110px] transition-all">
+                <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex-shrink-0 flex items-center justify-center text-cyan-400 text-xl">
+                    <i id="infoIcon" class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 id="infoTitle" class="font-tech text-sm font-bold text-cyan-300">¡Bienvenido Ingeniero!</h3>
+                    <p id="infoDesc" class="text-xs text-slate-300 mt-1 leading-relaxed">
+                        Selecciona o arrastra una pieza para conocer su importancia en el funcionamiento del robot. Completa el circuito para encender el sistema.
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER EDUCATIVO -->
+    <footer class="w-full bg-slate-950 border-t border-slate-800/80 py-3 text-center text-xs text-slate-500">
+        <p>Aprende Robótica Interactiva &bull; Módulo de HW y Componentes Robóticos</p>
+    </footer>
+
+    <!-- MODAL DE INSTRUCCIONES / INICIO -->
+    <div id="instructionsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl relative glow-cyan">
+            <div class="text-center mb-5">
+                <div class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center text-3xl text-white mb-3 shadow-lg">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <h2 class="font-tech text-xl font-bold text-cyan-300">Misión: Construye el Robot</h2>
+                <p class="text-xs text-slate-400 mt-1">Demuestra tus conocimientos de hardware robótico</p>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-300 mb-6 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-hand-pointer text-cyan-400 text-base mt-0.5"></i>
+                    <p><strong class="text-white">Arrastra o Haz Clic:</strong> Mueve las partes desde el banco de componentes hasta la ranura correcta del robot.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-book-open text-purple-400 text-base mt-0.5"></i>
+                    <p><strong class="text-white">Aprende:</strong> Lee la tarjeta educativa para saber qué hace cada sensor, motor o circuito.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-trophy text-amber-400 text-base mt-0.5"></i>
+                    <p><strong class="text-white">Puntaje Máximo:</strong> Completa el ensamblaje en el menor tiempo y sin errores para ganar 3 estrellas.</p>
+                </div>
+            </div>
+
+            <button id="startGameBtn" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-tech font-bold rounded-xl shadow-lg transition duration-200 transform hover:scale-[1.02]">
+                ¡COMENZAR ENSAMBLAJE!
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE VICTORIA Y RECOMPENSA -->
+    <div id="victoryModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-emerald-500/50 rounded-2xl p-6 max-w-lg w-full shadow-2xl text-center relative glow-green transform transition-all">
+            
+            <div class="w-20 h-20 bg-emerald-500/20 rounded-full border-2 border-emerald-400 mx-auto flex items-center justify-center text-4xl text-emerald-400 mb-4 animate-bounce">
+                <i class="fa-solid fa-award"></i>
+            </div>
+
+            <h2 class="font-tech text-2xl font-black text-emerald-400 tracking-wide">¡SISTEMA OPERATIVO!</h2>
+            <p class="text-xs text-slate-300 mt-1">Has ensamblado correctamente todas las partes del robot.</p>
+
+            <!-- Estrellas de Calificación -->
+            <div class="flex justify-center space-x-2 my-4 text-3xl" id="starsContainer">
+                <i class="fa-solid fa-star text-amber-400"></i>
+                <i class="fa-solid fa-star text-amber-400"></i>
+                <i class="fa-solid fa-star text-amber-400"></i>
+            </div>
+
+            <!-- Resumen de Estadísticas -->
+            <div class="grid grid-cols-3 gap-3 bg-slate-950/80 p-3 rounded-xl border border-slate-800 my-4 text-center">
+                <div>
+                    <span class="block text-[10px] text-slate-400 uppercase">Tiempo</span>
+                    <span id="finalTime" class="font-tech text-base font-bold text-cyan-300">00:00</span>
+                </div>
+                <div>
+                    <span class="block text-[10px] text-slate-400 uppercase">Puntos</span>
+                    <span id="finalPoints" class="font-tech text-base font-bold text-amber-400">0</span>
+                </div>
+                <div>
+                    <span class="block text-[10px] text-slate-400 uppercase">Precisión</span>
+                    <span id="finalAccuracy" class="font-tech text-base font-bold text-emerald-400">100%</span>
+                </div>
+            </div>
+
+            <!-- Mensaje Motivacional -->
+            <p id="victoryFeedback" class="text-xs text-cyan-200 bg-cyan-950/50 border border-cyan-800/50 p-3 rounded-lg mb-5">
+                ¡Increíble trabajo! Tienes las habilidades de un verdadero Ingeniero Mecatrónico.
+            </p>
+
+            <div class="flex gap-3">
+                <button id="playAgainBtn" class="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-tech font-bold rounded-xl shadow-lg transition">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Jugar de Nuevo
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SCRIPT DE LÓGICA Y AUDIO -->
+    <script>
+        // ==========================================
+        // 1. DATOS DE LAS PARTES DEL ROBOT
+        // ==========================================
+        const ROBOT_PARTS = [
+            {
+                id: 'sensores',
+                name: 'Sensores',
+                icon: 'fa-eye',
+                color: 'from-cyan-500 to-blue-500',
+                border: 'border-cyan-400',
+                desc: 'Permiten al robot percibir el entorno (cámaras, ultrasónicos, infrarrojos). Son los "sentidos" del robot.'
+            },
+            {
+                id: 'controlador',
+                name: 'Controlador / CPU',
+                icon: 'fa-microchip',
+                color: 'from-purple-500 to-indigo-500',
+                border: 'border-purple-400',
+                desc: 'Es el "cerebro" (Microcontrolador o Microprocesador). Procesa los datos de los sensores y toma decisiones.'
+            },
+            {
+                id: 'bateria',
+                name: 'Fuente de Energía',
+                icon: 'fa-car-battery',
+                color: 'from-amber-500 to-yellow-500',
+                border: 'border-amber-400',
+                desc: 'Proporciona la energía eléctrica necesaria para encender la electrónica y hacer mover los motores.'
+            },
+            {
+                id: 'chasis',
+                name: 'Chasis / Estructura',
+                icon: 'fa-shield-halved',
+                color: 'from-blue-600 to-slate-600',
+                border: 'border-blue-400',
+                desc: 'El esqueleto físico del robot. Sostiene todos los componentes y los protege de golpes externos.'
+            },
+            {
+                id: 'efector',
+                name: 'Gripper / Efector Final',
+                icon: 'fa-hand-back-fist',
+                color: 'from-emerald-500 to-teal-500',
+                border: 'border-emerald-400',
+                desc: 'Herramienta en el extremo del brazo (pinza, ventosa, soldador) que interactúa con objetos.'
+            },
+            {
+                id: 'actuadores',
+                name: 'Actuadores / Motores',
+                icon: 'fa-gear',
+                color: 'from-rose-500 to-red-500',
+                border: 'border-rose-400',
+                desc: 'Los "músculos" del robot (Servomotores, motores DC). Convierten energía eléctrica en movimiento mecánico.'
+            },
+            {
+                id: 'cables',
+                name: 'Buses y Cables',
+                icon: 'fa-network-wired',
+                color: 'from-indigo-500 to-purple-600',
+                border: 'border-indigo-400',
+                desc: 'El sistema nervioso. Transmiten señales de datos e impulsos eléctricos a través de todo el robot.'
+            }
+        ];
+
+        // ==========================================
+        // 2. ESTADO DEL JUEGO
+        // ==========================================
+        let gameState = {
+            placedParts: {}, // mapa: partId -> true
+            score: 0,
+            points: 0,
+            attempts: 0,
+            errors: 0,
+            startTime: null,
+            timerInterval: null,
+            elapsedSeconds: 0,
+            selectedPieceId: null, // Soporte para click-to-select
+            soundEnabled: true
+        };
+
+        // ==========================================
+        // 3. SINTETIZADOR DE SONIDOS (Web Audio API)
+        // ==========================================
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playClick() {
+                if (!gameState.soundEnabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playSuccess() {
+                if (!gameState.soundEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                // Arpegio Futurista Acertado
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + (idx * 0.06));
+                    gain.gain.setValueAtTime(0.2, now + (idx * 0.06));
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.06) + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + (idx * 0.06));
+                    osc.stop(now + (idx * 0.06) + 0.25);
+                });
+            }
+
+            playError() {
+                if (!gameState.soundEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            playVictory() {
+                if (!gameState.soundEnabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [440, 554.37, 659.25, 880, 1108.73];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + (i * 0.12));
+                    gain.gain.setValueAtTime(0.25, now + (i * 0.12));
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.12) + 0.5);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + (i * 0.12));
+                    osc.stop(now + (i * 0.12) + 0.55);
+                });
+            }
+        }
+
+        const sounds = new SoundFX();
+
+        // ==========================================
+        // 4. ELEMENTOS DEL DOM
+        // ==========================================
+        const piecesContainer = document.getElementById('piecesContainer');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        const scoreText = document.getElementById('scoreText');
+        const timerText = document.getElementById('timerText');
+        const pointsText = document.getElementById('pointsText');
+        const piecesCount = document.getElementById('piecesCount');
+        const infoTitle = document.getElementById('infoTitle');
+        const infoDesc = document.getElementById('infoDesc');
+        const infoIcon = document.getElementById('infoIcon');
+        const audioToggleBtn = document.getElementById('audioToggleBtn');
+        const audioIcon = document.getElementById('audioIcon');
+        const hintBtn = document.getElementById('hintBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const instructionsModal = document.getElementById('instructionsModal');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const victoryModal = document.getElementById('victoryModal');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+
+        // ==========================================
+        // 5. INICIALIZACIÓN Y RENDERIZADO
+        // ==========================================
+        function initGame() {
+            gameState.placedParts = {};
+            gameState.score = 0;
+            gameState.points = 0;
+            gameState.attempts = 0;
+            gameState.errors = 0;
+            gameState.elapsedSeconds = 0;
+            gameState.selectedPieceId = null;
+
+            clearInterval(gameState.timerInterval);
+            updateUI();
+            resetDropZones();
+            renderPieces();
+            
+            // Reset Info Card
+            infoTitle.textContent = "¡Bienvenido Ingeniero!";
+            infoDesc.textContent = "Selecciona o arrastra una pieza para conocer su función en el robot.";
+            infoIcon.className = "fa-solid fa-robot";
+        }
+
+        function startGame() {
+            instructionsModal.classList.add('hidden');
+            victoryModal.classList.add('hidden');
+            initGame();
+            startTimer();
+            sounds.playClick();
+        }
+
+        function startTimer() {
+            gameState.startTime = Date.now();
+            gameState.timerInterval = setInterval(() => {
+                gameState.elapsedSeconds++;
+                const mins = Math.floor(gameState.elapsedSeconds / 60).toString().padStart(2, '0');
+                const secs = (gameState.elapsedSeconds % 60).toString().padStart(2, '0');
+                timerText.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function renderPieces() {
+            piecesContainer.innerHTML = '';
+            
+            // Mezclar piezas aleatoriamente
+            const shuffledParts = [...ROBOT_PARTS].sort(() => Math.random() - 0.5);
+
+            shuffledParts.forEach(part => {
+                if (gameState.placedParts[part.id]) return; // Si ya fue colocada, no renderizar aquí
+
+                const card = document.createElement('div');
+                card.id = `piece-${part.id}`;
+                card.draggable = true;
+                card.dataset.partId = part.id;
+                card.className = `draggable-piece bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/80 hover:${part.border} rounded-xl p-3 flex items-center space-x-3 cursor-pointer shadow-md transition group`;
+
+                card.innerHTML = `
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br ${part.color} flex items-center justify-center text-white text-lg shadow-inner group-hover:scale-110 transition">
+                        <i class="fa-solid ${part.icon}"></i>
+                    </div>
+                    <div class="flex-1 overflow-hidden">
+                        <h4 class="font-tech text-xs font-bold text-slate-200 truncate group-hover:text-cyan-300">${part.name}</h4>
+                        <span class="text-[10px] text-slate-400 block">Toca o Arrastra</span>
+                    </div>
+                `;
+
+                // Eventos Drag & Drop
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+
+                // Evento Click para selección directa (soporte móvil/táctil rápido)
+                card.addEventListener('click', () => handlePieceClick(part));
+
+                piecesContainer.appendChild(card);
+            });
+
+            piecesCount.textContent = `${ROBOT_PARTS.length - Object.keys(gameState.placedParts).length} disponibles`;
+        }
+
+        function resetDropZones() {
+            dropZones.forEach(zone => {
+                const partId = zone.dataset.part;
+                const partData = ROBOT_PARTS.find(p => p.id === partId);
+                
+                zone.classList.remove('filled', 'glow-green', 'drag-over');
+                zone.innerHTML = `
+                    <span class="text-xs text-slate-500 font-semibold tracking-wide flex items-center gap-1">
+                        <i class="fa-solid ${partData ? partData.icon : 'fa-circle'} opacity-50"></i> ${partData ? partData.name : ''}
+                    </span>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 6. MANEJO DE DRAG & DROP Y CLICK
+        // ==========================================
+        let draggedPartId = null;
+
+        function handleDragStart(e) {
+            draggedPartId = this.dataset.partId;
+            this.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', draggedPartId);
+            sounds.playClick();
+            
+            // Mostrar descripción en la tarjeta al empezar a arrastrar
+            showPartInfo(draggedPartId);
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+        }
+
+        // Configurar Eventos para Drop Zones
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const partId = e.dataTransfer.getData('text/plain') || draggedPartId;
+                attemptPlacement(partId, zone.dataset.part);
+            });
+
+            // Soporte para colocar haciendo click en la casilla destino si hay una pieza seleccionada
+            zone.addEventListener('click', () => {
+                if (gameState.selectedPieceId) {
+                    attemptPlacement(gameState.selectedPieceId, zone.dataset.part);
+                } else if (zone.classList.contains('filled')) {
+                    // Si la casilla ya está llena, mostrar info de esa parte
+                    showPartInfo(zone.dataset.part);
+                }
+            });
+        });
+
+        function handlePieceClick(part) {
+            sounds.playClick();
+            showPartInfo(part.id);
+
+            // Resaltar selección de pieza
+            document.querySelectorAll('.draggable-piece').forEach(el => el.classList.remove('ring-2', 'ring-cyan-400', 'bg-slate-700'));
+            
+            if (gameState.selectedPieceId === part.id) {
+                // Deseleccionar
+                gameState.selectedPieceId = null;
+            } else {
+                gameState.selectedPieceId = part.id;
+                const el = document.getElementById(`piece-${part.id}`);
+                if (el) el.classList.add('ring-2', 'ring-cyan-400', 'bg-slate-700');
+            }
+        }
+
+        function showPartInfo(partId) {
+            const part = ROBOT_PARTS.find(p => p.id === partId);
+            if (!part) return;
+
+            infoTitle.textContent = part.name;
+            infoDesc.textContent = part.desc;
+            infoIcon.className = `fa-solid ${part.icon}`;
+        }
+
+        // ==========================================
+        // 7. LÓGICA DE VALIDACIÓN Y PUNTUACIÓN
+        // ==========================================
+        function attemptPlacement(partId, targetZoneId) {
+            if (!partId || gameState.placedParts[targetZoneId]) return;
+
+            gameState.attempts++;
+
+            if (partId === targetZoneId) {
+                // ¡ACIERTO!
+                gameState.placedParts[partId] = true;
+                gameState.score++;
+                gameState.points += 150;
+                gameState.selectedPieceId = null;
+
+                sounds.playSuccess();
+                renderSuccessfulDrop(partId);
+                renderPieces();
+                updateUI();
+
+                // Verificar si se completó el juego
+                if (gameState.score === ROBOT_PARTS.length) {
+                    setTimeout(triggerVictory, 600);
+                }
+
+            } else {
+                // ¡ERROR!
+                gameState.errors++;
+                gameState.points = Math.max(0, gameState.points - 30);
+                sounds.playError();
+                updateUI();
+
+                // Feedback visual de error en la casilla
+                const targetZone = document.querySelector(`.drop-zone[data-part="${targetZoneId}"]`);
+                if (targetZone) {
+                    targetZone.classList.add('border-red-500', 'bg-red-500/20');
+                    setTimeout(() => {
+                        targetZone.classList.remove('border-red-500', 'bg-red-500/20');
+                    }, 500);
+                }
+            }
+        }
+
+        function renderSuccessfulDrop(partId) {
+            const part = ROBOT_PARTS.find(p => p.id === partId);
+            const zone = document.querySelector(`.drop-zone[data-part="${partId}"]`);
+
+            if (!zone || !part) return;
+
+            zone.classList.add('filled', 'glow-green');
+            zone.innerHTML = `
+                <div class="w-full h-full rounded-lg bg-gradient-to-r ${part.color} p-2 flex items-center justify-between text-white shadow-lg animate-pulse-once">
+                    <div class="flex items-center space-x-2 truncate">
+                        <i class="fa-solid ${part.icon} text-sm"></i>
+                        <span class="font-tech text-xs font-bold truncate">${part.name}</span>
+                    </div>
+                    <i class="fa-solid fa-circle-check text-emerald-300 text-sm"></i>
+                </div>
+            `;
+        }
+
+        function updateUI() {
+            scoreText.textContent = `${gameState.score} / ${ROBOT_PARTS.length}`;
+            pointsText.textContent = gameState.points;
+        }
+
+        // Pistas
+        hintBtn.addEventListener('click', () => {
+            sounds.playClick();
+            // Buscar la primera parte no colocada
+            const remaining = ROBOT_PARTS.find(p => !gameState.placedParts[p.id]);
+            if (remaining) {
+                showPartInfo(remaining.id);
+                // Parpadear la zona destino correspondiente
+                const targetZone = document.querySelector(`.drop-zone[data-part="${remaining.id}"]`);
+                if (targetZone) {
+                    targetZone.classList.add('ring-4', 'ring-amber-400');
+                    setTimeout(() => targetZone.classList.remove('ring-4', 'ring-amber-400'), 1500);
+                }
+            }
+        });
+
+        // ==========================================
+        // 8. EFECTOS DE CONFETI Y FIN DE JUEGO
+        // ==========================================
+        function triggerVictory() {
+            clearInterval(gameState.timerInterval);
+            sounds.playVictory();
+            startConfetti();
+
+            // Calcular estrellas según precisión
+            const accuracy = Math.round((ROBOT_PARTS.length / (gameState.attempts || 1)) * 100);
+            let stars = 3;
+            if (gameState.errors > 2) stars = 2;
+            if (gameState.errors > 5) stars = 1;
+
+            // Renderizar Estrellas
+            const starsContainer = document.getElementById('starsContainer');
+            starsContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const star = document.createElement('i');
+                star.className = i < stars ? 'fa-solid fa-star text-amber-400 animate-bounce' : 'fa-regular fa-star text-slate-600';
+                starsContainer.appendChild(star);
+            }
+
+            // Datos Finales
+            document.getElementById('finalTime').textContent = timerText.textContent;
+            document.getElementById('finalPoints').textContent = gameState.points;
+            document.getElementById('finalAccuracy').textContent = `${accuracy}%`;
+
+            victoryModal.classList.remove('hidden');
+        }
+
+        // Sistema de Confeti en Canvas Nactivo
+        const canvas = document.getElementById('fxCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function startConfetti() {
+            particles = [];
+            const colors = ['#06b6d4', '#3b82f6', '#a855f7', '#22c55e', '#eab308', '#ec4899'];
+            for (let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 8 + 4,
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    spin: Math.random() * 360
+                });
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+
+            particles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.spin += 5;
+
+                if (p.y < canvas.height) active = true;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.spin * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+            });
+
+            if (active) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        // ==========================================
+        // 9. LISTENERS GENERALES DE BOTONES
+        // ==========================================
+        startGameBtn.addEventListener('click', startGame);
+        playAgainBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => {
+            sounds.playClick();
+            initGame();
+            startTimer();
+        });
+
+        audioToggleBtn.addEventListener('click', () => {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            audioIcon.className = gameState.soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-slate-500';
+            sounds.playClick();
+        });
+
+        // Inicializar Estado al cargar
+        window.onload = () => {
+            initGame();
+        };
+    </script>
+</body>
+</html>
